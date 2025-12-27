@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<ContinuousStructure CoordSystem="0">
+    <RectilinearGrid DeltaUnit="1" CoordSystem="0">
+        <XLines Qty="0" />
+        <YLines Qty="0" />
+        <ZLines Qty="0" />
+    </RectilinearGrid>
+    <BackgroundMaterial Epsilon="1" Mue="1" Kappa="0" Sigma="0" />
+    <ParameterSet />
+    <Properties>
+        <Material ID="0" Name="copper" Isotropy="1">
+            <FillColor R="103" G="198" B="105" a="123" />
+            <EdgeColor R="103" G="198" B="105" a="123" />
+            <Primitives>
+                <PolyhedronReader FileName="../stl/Traces_reduced.stl" FileType="STL" Priority="0" />
+            </Primitives>
+            <Property Epsilon="1.000000e+00,1.000000e+00,1.000000e+00" Mue="1.000000e+00,1.000000e+00,1.000000e+00" Kappa="0.000000e+00,0.000000e+00,0.000000e+00" Sigma="0.000000e+00,0.000000e+00,0.000000e+00" Density="0.000000e+00" />
+            <Weight Epsilon="1.000000e+00,1.000000e+00,1.000000e+00" Mue="1.000000e+00,1.000000e+00,1.000000e+00" Kappa="1.000000e+00,1.000000e+00,1.000000e+00" Sigma="1.000000e+00,1.000000e+00,1.000000e+00" Density="1.000000e+00" />
+        </Material>
+    </Properties>
+</ContinuousStructure>
