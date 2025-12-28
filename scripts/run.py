@@ -22,10 +22,20 @@ csx = ContinuousStructure()
 
 
 
-material = csx.AddMaterial('copper')
+material = csx.AddMetal('copper')
 stl_filename = '../stl/Traces_reduced.stl'
 stl_reader = material.AddPolyhedronReader(stl_filename)
 stl_reader.ReadFile()
+
+
+substrate = csx.AddMaterial('FR4')
+substrate.SetMaterialProperty(epsilon=4.3, kappa=1e-3)  # FR4 properties
+
+# Create substrate box (adjust to your PCB dimensions)
+substrate_box = substrate.AddBox(
+    start=[86.5252 *mm, -88.0904 *mm, 0.2 *mm],
+    stop=[106.401 *mm, -75.918 *mm, 0.8 *mm]  # PCB thickness
+)
 
 
 mesh = csx.GetGrid()
@@ -39,7 +49,7 @@ print(f"STL bounds: {stl_reader.GetBoundBox()}")
 
 mesh.AddLine('x', [86.5252 *mm, 106.401 *mm])
 mesh.AddLine('y', [-75.918 *mm, -88.0904 *mm])
-mesh.AddLine('z', [0 *mm, 1 *mm])
+mesh.AddLine('z', [-1 *mm, 2 *mm])
 
 mesh.AddLine('z', [0.4316 *mm, 0.4468 *mm, 0.5996 *mm, 0.6148 *mm]) # mesh lines for highres
 
@@ -47,7 +57,7 @@ mesh.SmoothMeshLines('x', res)
 mesh.SmoothMeshLines('y', res)
 mesh.SmoothMeshLines('z', res)
 
-dump = csx.AddDump("curl_H_upper", dump_type=3, file_type=1)
+dump = csx.AddDump("curl_H_upper", dump_type=0, file_type=1)
 dump.AddBox(start=[86.5252 *mm, -75.918 *mm, 0 *mm],
             stop=[106.401 *mm, -88.0904 *mm, 1 *mm])
 
@@ -73,12 +83,12 @@ port[3] = fdtd.AddLumpedPort(4, z0,
 
 # view geometry
 csx.Write2XML('geometry.xml')
-#os.system('AppCSXCAD geometry.xml')
+os.system('AppCSXCAD geometry.xml')
 
 
 
 fdtd.SetGaussExcite(f_max / 2, f_max / 2)
-fdtd.SetBoundaryCond(["PML_8", "PML_8", "PML_8", "PML_8", "PML_8", "PML_8"])
+fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
 
 sim_path = os.path.join(os.getcwd(), 'sim')
 os.makedirs(sim_path, exist_ok=True)
