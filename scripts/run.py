@@ -29,7 +29,7 @@ stl_reader.ReadFile()
 
 
 substrate = csx.AddMaterial('FR4')
-substrate.SetMaterialProperty(epsilon=4.3, kappa=1e-3)  # FR4 properties
+substrate.SetMaterialProperty(epsilon=4.2, kappa=0.02)  # FR4 properties
 
 # Create substrate box (adjust to your PCB dimensions)
 substrate_box = substrate.AddBox(
@@ -47,9 +47,11 @@ fdtd.SetCSX(csx)
 
 print(f"STL bounds: {stl_reader.GetBoundBox()}")
 
-mesh.AddLine('x', [86.5252 *mm, 106.401 *mm])
-mesh.AddLine('y', [-75.918 *mm, -88.0904 *mm])
-mesh.AddLine('z', [-1 *mm, 2 *mm])
+expand = 5
+
+mesh.AddLine('x', [86.5252 *mm - expand *mm, 106.401 *mm + expand *mm])
+mesh.AddLine('y', [-75.918 *mm + expand *mm, -88.0904 *mm - expand *mm])
+mesh.AddLine('z', [-2 *mm, 3 *mm])
 
 mesh.AddLine('z', [0.4316 *mm, 0.4468 *mm, 0.5996 *mm, 0.6148 *mm]) # mesh lines for highres
 
@@ -57,9 +59,12 @@ mesh.SmoothMeshLines('x', res)
 mesh.SmoothMeshLines('y', res)
 mesh.SmoothMeshLines('z', res)
 
-dump = csx.AddDump("curl_H_upper", dump_type=0, file_type=1)
-dump.AddBox(start=[86.5252 *mm, -75.918 *mm, 0 *mm],
-            stop=[106.401 *mm, -88.0904 *mm, 1 *mm])
+#mesh.AddEdge2Grid('x', res_fine) #check this next time
+#mesh.AddEdge2Grid('y', res_fine)
+
+#dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
+#dump.AddBox(start=[86.5252 *mm, -75.918 *mm, 0 *mm],
+#            stop=[106.401 *mm, -88.0904 *mm, 1 *mm])
 
 
 port = [None, None, None, None]
