@@ -20,8 +20,6 @@ z0 = 50 #port impedence
 
 csx = ContinuousStructure()
 
-
-
 material = csx.AddMetal('copper')
 stl_filename = '../stl/Traces_reduced.stl'
 stl_reader = material.AddPolyhedronReader(stl_filename)
@@ -99,3 +97,5 @@ sim_path = os.path.join(os.getcwd(), 'sim')
 os.makedirs(sim_path, exist_ok=True)
 
 fdtd.Run(sim_path)
+
+
