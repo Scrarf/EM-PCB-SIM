@@ -1,3 +1,4 @@
 
 *.blend1
 scripts/sim/
+__pycache__

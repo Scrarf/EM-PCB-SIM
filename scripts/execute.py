@@ -14,89 +14,156 @@ mm = 1e-3 #milimeter for muliplication
 f_min = 100e6  # post-processing only, not used in simulation
 f_max = 10e9   # determines mesh size and excitation signal bandwidth
 epsilon_r = 1
-v = C0 / math.sqrt(epsilon_r)
-wavelength = v / f_max 
-res = wavelength / 3e2
-
+resolution = 0.08 *mm
 z0 = 50 #port impedence
 
-expand = 3
+expand = -1
 
-port = [None] * 4
+port = [None] * 2
 sim_path = os.path.join(os.getcwd(), 'sim')
 
-def generate_ports():
+#port_pos = [[[None] * 2] * 3] * 2
+port_pos = np.zeros([2, 2, 3])
+
+port_pos[0] = [[0.136726, -0.114916, 0.001082],
+              [0.136979, -0.115084, 0.000930]]
+port_pos[1] = [[0.130480, -0.114916, 0.001082],
+              [0.130695, -0.115084, 0.000931]]
+
+#bounds start.x start.y end.x end.y end.z
+bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
+
+def generate_ports(csx, fdtd):
     
+    #pec = csx.AddMetal('pec')
+    
+    #port[0] = fdtd.AddMSLPort(1, pec,
+    #                port_pos[0][0],
+    #                port_pos[0][1],
+    #                'x', 'z', excite=-1, priority=100)
+
     port[0] = fdtd.AddLumpedPort(1, z0,
-                    [0.102895, -0.077755, 0.000443],
-                    [0.103640, -0.076997, 0.000607],
+                    port_pos[0][0],
+                    port_pos[0][1],
                     'z', excite=1)
     port[1] = fdtd.AddLumpedPort(2, z0,
-                    [0.102895, -0.079355, 0.000443],
-                    [0.103505, -0.078745, 0.000607],
+                    port_pos[1][0],
+                    port_pos[1][1],
                     'z', excite=0)
-    port[2] = fdtd.AddLumpedPort(3, z0,
-                    [0.090538, -0.084405, 0.000443],
-                    [0.091305, -0.083576, 0.000607],
-                    'z', excite=0)
-    port[3] = fdtd.AddLumpedPort(4, z0,
-                    [0.088295, -0.084405, 0.000443],
-                    [0.088905, -0.083795, 0.000607],
-                    'z', excite=0)
-                    
 
+                                                                        
 def generate_structure(csx, fdtd):
-    material = csx.AddMetal('copper')
     
-    stl_reader = material.AddPolyhedronReader('../stl/Traces.001.stl')
-    stl_reader = material.AddPolyhedronReader('../stl/Vias.001.stl')
+    #substrate = csx.AddMaterial('FR4')
+    #substrate.SetMaterialProperty(epsilon=4.2, kappa=0.02)  # FR4 properties
+    #substrate_box = substrate.AddPolyhedronReader('../stl/Substrate.002.stl')
+    #substrate_debug = substrate_box.ReadFile()
+    #substrate_box.SetPriority(1)
+    
+    #material = csx.AddMetal('copper')
+    #stl_reader = material.AddPolyhedronReader('../stl/Traces.002.stl')
+    #stl_reader = material.AddPolyhedronReader('../stl/Vias.002.stl')
     #stl_reader = material.AddPolyhedronReader('../stl/Pads.001.stl')
-    stl_reader.ReadFile()
+    #stl_reader.SetPriority(2)
+    #stl_reader = material.AddBox(
+    #    [bounds[0] - 2*mm, bounds[1] - 2*mm, bounds[2] - 2*mm],
+    #    [bounds[3] - 2*mm, bounds[4] - 2*mm, bounds[5] - 2*mm])
+        
+    #copper_debug = stl_reader.ReadFile()
 
+    #print(f"Substrate loading success: {substrate_debug}")
+    #print(f"Copper loading success: {copper_debug}")
     
-    substrate = csx.AddMaterial('FR4')
-    substrate.SetMaterialProperty(epsilon=4.2, kappa=0.02)  # FR4 properties
-
-    substrate_box = substrate.AddPolyhedronReader('../stl/Substrate.001.stl')
-    # Create substrate box (adjust to your PCB dimensions)
-    #substrate_box = substrate.AddBox(
-    #    start=[86.5252 *mm, -88.0904 *mm, 0.2 *mm],
-    #    stop=[106.401 *mm, -75.918 *mm, 0.8 *mm]  # PCB thickness
-    #)
+    
+    ground = csx.AddMetal('ground')
+    ground.AddBox(
+        [0.1274, -0.118388, 0.00093 - 0.0152e-3],
+        [0.14005, -0.111788, 0.00093],
+        priority=10
+    )
+    
+    # Copper trace (at the top of the ports)
+    trace = csx.AddMetal('trace')
+    trace.AddBox(
+        [0.1305, -0.115084, 0.00108],
+        [0.1370, -0.114916, 0.00108 + 0.0152e-3],
+        priority=10
+    )
     
     mesh = csx.GetGrid()
     mesh.SetDeltaUnit(engine_unit)
-    
 
-    mesh.AddLine('x', [81.7372 *mm - expand *mm, 107.702 *mm + expand *mm])
-    mesh.AddLine('y', [-62.1323 *mm + expand *mm, -89.1735 *mm - expand *mm])
-    mesh.AddLine('z', [-2 *mm, 3 *mm])
-    
-    mesh.AddLine('z', [0.4316 *mm, 0.4468 *mm, 0.5996 *mm, 0.6148 *mm]) # mesh lines for highres
-    
-    mesh.SmoothMeshLines('x', res)
-    mesh.SmoothMeshLines('y', res)
-    mesh.SmoothMeshLines('z', res)
 
-    print(f"STL bounds: {stl_reader.GetBoundBox()}")
+    mesh.AddLine('x', [bounds[0] - expand *mm, bounds[3] + expand *mm])
+    mesh.AddLine('y', [bounds[1] - expand *mm, bounds[4] + expand *mm])
+    mesh.AddLine('z', [bounds[2] - expand *mm, bounds[5] + expand *mm])
+
+    #mesh.AddLine('z', [0.4316 *mm, 0.4468 *mm, 0.5996 *mm, 0.6148 *mm]) # mesh lines for highres
+    #mesh.AddLine('z', [1.0828 *mm, 1.098 *mm, 1.398 *mm, 1.4132 *mm])
+
+    #mesh lines for ports
+
+    lines_per_port = 5
+    port_count = 2
+    for i in range(lines_per_port + 1):
+        for j in range(port_count):
+            mesh.AddLine('x', [port_pos[j][0][0] + (port_pos[j][1][0] - port_pos[j][0][0]) * i/lines_per_port])
+
+    for i in range(6):
+        mesh.AddLine('z', [port_pos[0][0][2] + (port_pos[0][1][2] - port_pos[0][0][2]) * i/5])
+
+    mesh.AddLine('z', [0.00108 + 0.0152e-3, 0.00093 - 0.0152e-3])
+
+    mesh.AddLine('z',[
+    -0.035 *mm,
+    0 *mm,
+    0.1164 *mm,
+    0.1316 *mm,
+    0.4316 *mm,
+    0.4468 *mm,
+    0.5996 *mm,
+    0.6148 *mm,
+    0.9148 *mm,
+    0.93 *mm,
+    1.0828 *mm,
+    1.098 *mm,
+    1.398 *mm,
+    1.4132 *mm,
+    1.5296 *mm,
+    1.5646 *mm
+    ])
     
+    mesh.SmoothMeshLines('x', resolution)
+    mesh.SmoothMeshLines('y', resolution)
+    mesh.SmoothMeshLines('z', resolution)
+
+    #print(stl_reader.GetBoundBox())
+            
+def open_view(csx, fdtd):    
     csx.Write2XML('geometry.xml')
     os.system('AppCSXCAD geometry.xml')
-            
+    
 
 def simulate(csx, fdtd):
     fdtd.SetEndCriteria(1e-5)
-        
+    #fdtd.SetOverSampling(4)
+    
     fdtd.SetGaussExcite(f_max / 2, f_max / 2)
     fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
 
     dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
-    dump.AddBox(start=[81.7372 *mm, -62.1323 *mm, 0 *mm],
-                stop=[107.702 *mm, -89.1735 *mm, 1.5296 *mm])
+    dump.AddBox(start=[bounds[0], bounds[1], bounds[2]],
+                stop=[bounds[3], bounds[4], bounds[5]])
     
     fdtd.Run(sim_path)
     
     print("COMPLETE YAY!")
+
+def debug(csx, fdtd):
+    fdtd.SetGaussExcite(f_max / 2, f_max / 2)
+    fdtd.Run(sim_path, debug_pec=True, verbose=3, setup_only=1, debug_material=True, debug_operator=True)
+    print("debug complete")
+    
 
 def postproc(arg):
     
@@ -127,6 +194,8 @@ def postproc(arg):
         plt.title("S-parameters")    
         plt.grid()
         plt.legend()
+        plt.xlabel("GHz")
+        plt.ylabel("dB")
         
     if arg == 'smith_chart':
 
@@ -191,19 +260,24 @@ if __name__ == "__main__":
     fdtd.SetCSX(csx)
     
     if len(sys.argv) <= 1:
-        print('No command given, expect "generate", "simulate", "postproc"')
-    elif sys.argv[1] in ["generate", "simulate"]:
-        generate_ports()
+        print('No command given, expect "generate", "simulate", "postproc", "debug"')
+    elif sys.argv[1] in ["generate", "simulate", "debug"]:
         generate_structure(csx, fdtd)
-
+        generate_ports(csx, fdtd)
+        open_view(csx, fdtd)
+        
         if sys.argv[1] == "simulate":
             # run simulator
             simulate(csx, fdtd)
+        elif sys.argv[1] == "debug":
+            debug(csx, fdtd)
+            
     elif sys.argv[1] == "postproc":
         if len(sys.argv) <= 2:
-            print('postproc requires 2 arguments, expect "s_param", "smith_chart", ""')
+            print('postproc requires 2 arguments, expect "s_param", "smith_chart", "tdf"')
         else:
-            generate_ports()
+            generate_structure(csx, fdtd)
+            generate_ports(csx, fdtd)
             postproc(sys.argv[2])
     else:
         print("Unknown command %s" % sys.argv[1])
