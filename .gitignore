@@ -2,3 +2,5 @@
 *.blend1
 scripts/sim/
 __pycache__
+png_frames/
+*.mp4
