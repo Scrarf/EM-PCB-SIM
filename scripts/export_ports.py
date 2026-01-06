@@ -30,10 +30,12 @@ else:
                 world_coord_v0 = obj.matrix_world @ vert0.co
                 world_coord_v7 = obj.matrix_world @ vert7.co
                 
-                print(f"""port[{i}] = fdtd.AddLumpedPort({i + 1}, z0,
-                [{world_coord_v0.x:.6f}, {world_coord_v0.y:.6f}, {world_coord_v0.z:.6f}], 
-                [{world_coord_v7.x:.6f}, {world_coord_v7.y:.6f}, {world_coord_v7.z:.6f}],
-                'z', excite=0)""")
+                #print(f"""port[{i}] = fdtd.AddLumpedPort({i + 1}, z0,
+                #[{world_coord_v0.x:.6f}, {world_coord_v0.y:.6f}, {world_coord_v0.z:.6f}], 
+                #[{world_coord_v7.x:.6f}, {world_coord_v7.y:.6f}, {world_coord_v7.z:.6f}],
+                #'z', excite=0)""")
+                print(f"""port_pos[{i}] = [[{world_coord_v0.x:.6f}, {world_coord_v0.y:.6f}, {world_coord_v0.z:.6f}], 
+              [{world_coord_v7.x:.6f}, {world_coord_v7.y:.6f}, {world_coord_v7.z:.6f}]]""")
                 i += 1
                 
             else:

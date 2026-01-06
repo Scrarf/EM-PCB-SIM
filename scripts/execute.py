@@ -17,7 +17,7 @@ epsilon_r = 1
 resolution = 0.08 *mm
 z0 = 50 #port impedence
 
-expand = -1
+expand = 1
 
 port = [None] * 2
 sim_path = os.path.join(os.getcwd(), 'sim')
@@ -32,6 +32,20 @@ port_pos[1] = [[0.130480, -0.114916, 0.001082],
 
 #bounds start.x start.y end.x end.y end.z
 bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
+
+#generated from blender
+mesh_lines_x = [
+    0.13764009, 0.13746291, 0.13755122, 0.13750592, 0.13759479, 0.13000005, 0.13008250, 0.12991707,
+    0.12995748, 0.13004047
+]
+
+mesh_lines_y = [
+    -0.11493395, -0.11506604, -0.11501829, -0.11497639
+]
+
+mesh_lines_z = [
+    0.00091667, 0.00092794, 0.00108494, 0.00109621, 0.00092221, 0.00109075
+]
 
 def generate_ports(csx, fdtd):
     
@@ -54,41 +68,42 @@ def generate_ports(csx, fdtd):
                                                                         
 def generate_structure(csx, fdtd):
     
-    #substrate = csx.AddMaterial('FR4')
-    #substrate.SetMaterialProperty(epsilon=4.2, kappa=0.02)  # FR4 properties
-    #substrate_box = substrate.AddPolyhedronReader('../stl/Substrate.002.stl')
-    #substrate_debug = substrate_box.ReadFile()
-    #substrate_box.SetPriority(1)
+    substrate_material = csx.AddMaterial('FR4')
+    substrate_material.SetMaterialProperty(epsilon=4.2, kappa=0.02)
+    copper_material = csx.AddMetal('copper')
     
-    #material = csx.AddMetal('copper')
-    #stl_reader = material.AddPolyhedronReader('../stl/Traces.002.stl')
-    #stl_reader = material.AddPolyhedronReader('../stl/Vias.002.stl')
-    #stl_reader = material.AddPolyhedronReader('../stl/Pads.001.stl')
-    #stl_reader.SetPriority(2)
-    #stl_reader = material.AddBox(
-    #    [bounds[0] - 2*mm, bounds[1] - 2*mm, bounds[2] - 2*mm],
-    #    [bounds[3] - 2*mm, bounds[4] - 2*mm, bounds[5] - 2*mm])
-        
-    #copper_debug = stl_reader.ReadFile()
+    substrate = substrate_material.AddPolyhedronReader('../stl/Substrate.002.stl')
+    copper_traces = copper_material.AddPolyhedronReader('../stl/Traces.002.stl')
+    copper_vias = copper_material.AddPolyhedronReader('../stl/Vias.002.stl')
 
-    #print(f"Substrate loading success: {substrate_debug}")
-    #print(f"Copper loading success: {copper_debug}")
+    
+    substrate.SetPriority(1)
+    copper_traces.SetPriority(2)
+    copper_vias.SetPriority(3)
+    
+    substrate_debug = substrate.ReadFile()    
+    copper_traces_debug = copper_traces.ReadFile()
+    copper_vias_debug = copper_vias.ReadFile()
+
+    print(f"Substrate loading success: {substrate_debug}")
+    print(f"Copper traces loading success: {copper_traces_debug}")
+    print(f"Copper vias loading success: {copper_vias_debug}")
     
     
-    ground = csx.AddMetal('ground')
-    ground.AddBox(
-        [0.1274, -0.118388, 0.00093 - 0.0152e-3],
-        [0.14005, -0.111788, 0.00093],
-        priority=10
-    )
-    
-    # Copper trace (at the top of the ports)
-    trace = csx.AddMetal('trace')
-    trace.AddBox(
-        [0.1305, -0.115084, 0.00108],
-        [0.1370, -0.114916, 0.00108 + 0.0152e-3],
-        priority=10
-    )
+    #ground = csx.AddMetal('ground')
+    #ground.AddBox(
+    #    [0.1274, -0.118388, 0.00093 - 0.0152e-3],
+    #    [0.14005, -0.111788, 0.00093],
+    #    priority=10
+    #)
+    #
+    ## Copper trace (at the top of the ports)
+    #trace = csx.AddMetal('trace')
+    #trace.AddBox(
+    #    [0.1305, -0.115084, 0.00108],
+    #    [0.1370, -0.114916, 0.00108 + 0.0152e-3],
+    #    priority=10
+    #)
     
     mesh = csx.GetGrid()
     mesh.SetDeltaUnit(engine_unit)
@@ -112,26 +127,31 @@ def generate_structure(csx, fdtd):
     for i in range(6):
         mesh.AddLine('z', [port_pos[0][0][2] + (port_pos[0][1][2] - port_pos[0][0][2]) * i/5])
 
-    mesh.AddLine('z', [0.00108 + 0.0152e-3, 0.00093 - 0.0152e-3])
+    #mesh.AddLine('z', [0.00108 + 0.0152e-3, 0.00093 - 0.0152e-3])
 
-    mesh.AddLine('z',[
-    -0.035 *mm,
-    0 *mm,
-    0.1164 *mm,
-    0.1316 *mm,
-    0.4316 *mm,
-    0.4468 *mm,
-    0.5996 *mm,
-    0.6148 *mm,
-    0.9148 *mm,
-    0.93 *mm,
-    1.0828 *mm,
-    1.098 *mm,
-    1.398 *mm,
-    1.4132 *mm,
-    1.5296 *mm,
-    1.5646 *mm
-    ])
+    mesh.AddLine('x', mesh_lines_x)
+    mesh.AddLine('y', mesh_lines_y)
+    mesh.AddLine('z', mesh_lines_z)
+
+    #mesh.AddLine('z',[
+    #-0.035 *mm,
+    #0 *mm,
+    #0.1164 *mm,
+    #0.1316 *mm,
+    #0.4316 *mm,
+    #0.4468 *mm,
+    #0.5996 *mm,
+    #0.6148 *mm,
+    #0.9148 *mm,
+    #0.93 *mm,
+    #1.0828 *mm,
+    #1.098 *mm,
+    #1.398 *mm,
+    #1.4132 *mm,
+    #1.5296 *mm,
+    #1.5646 *mm
+    #])
+
     
     mesh.SmoothMeshLines('x', resolution)
     mesh.SmoothMeshLines('y', resolution)
