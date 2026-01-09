@@ -14,10 +14,10 @@ mm = 1e-3 #milimeter for muliplication
 f_min = 100e6  # post-processing only, not used in simulation
 f_max = 10e9   # determines mesh size and excitation signal bandwidth
 epsilon_r = 1
-resolution = 0.08 *mm
+resolution = 0.04 *mm
 z0 = 50 #port impedence
 
-expand = 1
+expand = 0.5
 
 port = [None] * 2
 sim_path = os.path.join(os.getcwd(), 'sim')
@@ -25,28 +25,19 @@ sim_path = os.path.join(os.getcwd(), 'sim')
 #port_pos = [[[None] * 2] * 3] * 2
 port_pos = np.zeros([2, 2, 3])
 
-port_pos[0] = [[0.136726, -0.114916, 0.001082],
-              [0.136979, -0.115084, 0.000930]]
-port_pos[1] = [[0.130480, -0.114916, 0.001082],
-              [0.130695, -0.115084, 0.000931]]
+port_pos[0] = [[0.137167, -0.114762, 0.000930],
+              [0.137314, -0.114615, 0.001083]]
+port_pos[1] = [[0.132437, -0.110036, 0.000930],
+              [0.132584, -0.109888, 0.001083]]
 
 #bounds start.x start.y end.x end.y end.z
-bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
+bounds = [129.75 *mm, -117.388 *mm, 0 *mm, 140.05 *mm, -107.338 *mm, 1.5296 *mm]
 
 #generated from blender
-mesh_lines_x = [
-    0.13764009, 0.13746291, 0.13755122, 0.13750592, 0.13759479, 0.13000005, 0.13008250, 0.12991707,
-    0.12995748, 0.13004047
-]
-
-mesh_lines_y = [
-    -0.11493395, -0.11506604, -0.11501829, -0.11497639
-]
-
 mesh_lines_z = [
-    0.00091667, 0.00092794, 0.00108494, 0.00109621, 0.00092221, 0.00109075
+    0.00091713, 0.00092794, 0.00092221, 0.00043938, 0.00044416, 0.00043461, 0.00109013, 0.00108543,
+    0.00109554, 0.00140549, 0.00141045, 0.00140101
 ]
-
 def generate_ports(csx, fdtd):
     
     #pec = csx.AddMetal('pec')
@@ -72,9 +63,9 @@ def generate_structure(csx, fdtd):
     substrate_material.SetMaterialProperty(epsilon=4.2, kappa=0.02)
     copper_material = csx.AddMetal('copper')
     
-    substrate = substrate_material.AddPolyhedronReader('../stl/Substrate.002.stl')
-    copper_traces = copper_material.AddPolyhedronReader('../stl/Traces.002.stl')
-    copper_vias = copper_material.AddPolyhedronReader('../stl/Vias.002.stl')
+    substrate = substrate_material.AddPolyhedronReader('../stl/Substrate.001.stl')
+    copper_traces = copper_material.AddPolyhedronReader('../stl/Traces.001.stl')
+    copper_vias = copper_material.AddPolyhedronReader('../stl/Vias.001.stl')
 
     
     substrate.SetPriority(1)
@@ -88,22 +79,6 @@ def generate_structure(csx, fdtd):
     print(f"Substrate loading success: {substrate_debug}")
     print(f"Copper traces loading success: {copper_traces_debug}")
     print(f"Copper vias loading success: {copper_vias_debug}")
-    
-    
-    #ground = csx.AddMetal('ground')
-    #ground.AddBox(
-    #    [0.1274, -0.118388, 0.00093 - 0.0152e-3],
-    #    [0.14005, -0.111788, 0.00093],
-    #    priority=10
-    #)
-    #
-    ## Copper trace (at the top of the ports)
-    #trace = csx.AddMetal('trace')
-    #trace.AddBox(
-    #    [0.1305, -0.115084, 0.00108],
-    #    [0.1370, -0.114916, 0.00108 + 0.0152e-3],
-    #    priority=10
-    #)
     
     mesh = csx.GetGrid()
     mesh.SetDeltaUnit(engine_unit)
@@ -123,36 +98,17 @@ def generate_structure(csx, fdtd):
     for i in range(lines_per_port + 1):
         for j in range(port_count):
             mesh.AddLine('x', [port_pos[j][0][0] + (port_pos[j][1][0] - port_pos[j][0][0]) * i/lines_per_port])
+            mesh.AddLine('y', [port_pos[j][0][1] + (port_pos[j][1][1] - port_pos[j][0][1]) * i/lines_per_port])
 
-    for i in range(6):
-        mesh.AddLine('z', [port_pos[0][0][2] + (port_pos[0][1][2] - port_pos[0][0][2]) * i/5])
-
-    #mesh.AddLine('z', [0.00108 + 0.0152e-3, 0.00093 - 0.0152e-3])
-
-    mesh.AddLine('x', mesh_lines_x)
-    mesh.AddLine('y', mesh_lines_y)
-    mesh.AddLine('z', mesh_lines_z)
-
-    #mesh.AddLine('z',[
-    #-0.035 *mm,
-    #0 *mm,
-    #0.1164 *mm,
-    #0.1316 *mm,
-    #0.4316 *mm,
-    #0.4468 *mm,
-    #0.5996 *mm,
-    #0.6148 *mm,
-    #0.9148 *mm,
-    #0.93 *mm,
-    #1.0828 *mm,
-    #1.098 *mm,
-    #1.398 *mm,
-    #1.4132 *mm,
-    #1.5296 *mm,
-    #1.5646 *mm
-    #])
+    #for i in range(6):
+    #    mesh.AddLine('z', [port_pos[0][0][2] + (port_pos[0][1][2] - port_pos[0][0][2]) * i/5])
 
     
+
+    #mesh.AddLine('x', mesh_lines_x)
+    #mesh.AddLine('y', mesh_lines_y)
+    mesh.AddLine('z', mesh_lines_z)
+
     mesh.SmoothMeshLines('x', resolution)
     mesh.SmoothMeshLines('y', resolution)
     mesh.SmoothMeshLines('z', resolution)
@@ -170,7 +126,7 @@ def simulate(csx, fdtd):
     
     fdtd.SetGaussExcite(f_max / 2, f_max / 2)
     fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
-
+    
     dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
     dump.AddBox(start=[bounds[0], bounds[1], bounds[2]],
                 stop=[bounds[3], bounds[4], bounds[5]])
