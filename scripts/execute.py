@@ -25,11 +25,11 @@ sim_path = os.path.join(os.getcwd(), 'sim')
 #port_pos = [[[None] * 2] * 3] * 2
 port_pos = np.zeros([2, 2, 3])
 
-port_pos[0] = [[0.137167, -0.114762, 0.000930],
-              [0.137314, -0.114615, 0.001083]]
-port_pos[1] = [[0.132437, -0.110036, 0.000930],
-              [0.132584, -0.109888, 0.001083]]
-
+port_pos[0] = [[0.137106, -0.114705, 0.000930],
+              [0.137253, -0.114557, 0.001083]]
+port_pos[1] = [[0.132482, -0.110080, 0.000930],
+              [0.132629, -0.109932, 0.001083]]
+              
 #bounds start.x start.y end.x end.y end.z
 bounds = [129.75 *mm, -117.388 *mm, 0 *mm, 140.05 *mm, -107.338 *mm, 1.5296 *mm]
 
@@ -127,9 +127,9 @@ def simulate(csx, fdtd):
     fdtd.SetGaussExcite(f_max / 2, f_max / 2)
     fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
     
-    dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
-    dump.AddBox(start=[bounds[0], bounds[1], bounds[2]],
-                stop=[bounds[3], bounds[4], bounds[5]])
+    #dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
+    #dump.AddBox(start=[bounds[0], bounds[1], bounds[2]],
+    #            stop=[bounds[3], bounds[4], bounds[5]])
     
     fdtd.Run(sim_path)
     
@@ -164,13 +164,14 @@ def postproc(arg):
         s11_db_list = 10 * np.log10(np.abs(s11_list) ** 2)
         s21_db_list = 10 * np.log10(np.abs(s21_list) ** 2) 
             
-        plt.plot(freq_list / 1e9, s11_db_list, label='$S_{11}$ dB')
-        plt.plot(freq_list / 1e9, s21_db_list, label='$S_{21}$ dB')
+        plt.plot(freq_list, s11_db_list, label='$S_{11}$ dB')
+        plt.plot(freq_list, s21_db_list, label='$S_{21}$ dB')
 
+        plt.xscale('log')
         plt.title("S-parameters")    
-        plt.grid()
+        plt.grid(which='both')
         plt.legend()
-        plt.xlabel("GHz")
+        plt.xlabel("Hz")
         plt.ylabel("dB")
         
     if arg == 'smith_chart':
