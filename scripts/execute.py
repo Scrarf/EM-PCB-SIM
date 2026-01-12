@@ -7,6 +7,7 @@ import sys
 import numpy as np
 import matplotlib.pylab as plt
 import skrf
+from ports import port_pos
 
 engine_unit = 1 #openEMS still works in meeters
 mm = 1e-3 #milimeter for muliplication
@@ -19,10 +20,9 @@ z0 = 50 #port impedence
 
 expand = 1
 
-port = [None] * 2
-sim_path = os.path.join(os.getcwd(), 'sim')
+port = [None] * len(port_pos)
 
-import ports #add ports
+sim_path = os.path.join(os.getcwd(), 'sim')
 
 #bounds start.x start.y end.x end.y end.z
 bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
@@ -42,23 +42,15 @@ mesh_lines_z = [
 ]
 
 def generate_ports(csx, fdtd):
-    
-    #pec = csx.AddMetal('pec')
-    
-    #port[0] = fdtd.AddMSLPort(1, pec,
-    #                port_pos[0][0],
-    #                port_pos[0][1],
-    #                'x', 'z', excite=-1, priority=100)
 
-    port[0] = fdtd.AddLumpedPort(1, z0,
-                    port_pos[0][0],
-                    port_pos[0][1],
-                    'z', excite=1)
-    port[1] = fdtd.AddLumpedPort(2, z0,
-                    port_pos[1][0],
-                    port_pos[1][1],
-                    'z', excite=0)
+    #'exc' is a list of excited ports. firt port is index 1, follows name not array index.
+    exc = {1}
 
+    for i in port_pos:
+        port[i] = fdtd.AddLumpedPort(i+1, z0,
+                    port_pos[i][0],
+                    port_pos[i][1],
+                    'z', excite=1 if i+1 in exc else 0)
                                                                         
 def generate_structure(csx, fdtd):
     
