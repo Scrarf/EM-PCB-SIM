@@ -11,7 +11,7 @@ import skrf
 engine_unit = 1 #openEMS still works in meeters
 mm = 1e-3 #milimeter for muliplication
 
-f_min = 100e6  # post-processing only, not used in simulation
+f_min = 1#100e6  # post-processing only, not used in simulation
 f_max = 10e9   # determines mesh size and excitation signal bandwidth
 epsilon_r = 1
 resolution = 0.08 *mm
@@ -22,13 +22,7 @@ expand = 1
 port = [None] * 2
 sim_path = os.path.join(os.getcwd(), 'sim')
 
-#port_pos = [[[None] * 2] * 3] * 2
-port_pos = np.zeros([2, 2, 3])
-
-port_pos[0] = [[0.136726, -0.114916, 0.001082],
-              [0.136979, -0.115084, 0.000930]]
-port_pos[1] = [[0.130480, -0.114916, 0.001082],
-              [0.130695, -0.115084, 0.000931]]
+import ports #add ports
 
 #bounds start.x start.y end.x end.y end.z
 bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
@@ -211,8 +205,9 @@ def postproc(arg):
         plt.plot(freq_list / 1e9, s11_db_list, label='$S_{11}$ dB')
         plt.plot(freq_list / 1e9, s21_db_list, label='$S_{21}$ dB')
 
+        #plt.xscale('log')
         plt.title("S-parameters")    
-        plt.grid()
+        plt.grid(which='both')
         plt.legend()
         plt.xlabel("GHz")
         plt.ylabel("dB")
@@ -269,7 +264,6 @@ def postproc(arg):
         plt.title("Time Domain Reflectometry - Impulse")
         network_dc.s11.plot_z_time_impulse(window='hamming', label="impedance")
         plt.xlim([-1, 2])  # look at the first two nanoseconds
-        plt.show()
     
     plt.show()
 
