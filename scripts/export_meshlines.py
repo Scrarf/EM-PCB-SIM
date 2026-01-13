@@ -1,3 +1,4 @@
+#OPEN IN BLENDER ONLY
 import bpy
 
 # Get the main collection

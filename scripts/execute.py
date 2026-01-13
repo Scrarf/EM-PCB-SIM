@@ -24,21 +24,12 @@ port = [None] * len(port_pos)
 
 sim_path = os.path.join(os.getcwd(), 'sim')
 
-#bounds start.x start.y end.x end.y end.z
-bounds = [127.4 *mm, -118.388 *mm, 0 *mm, 140.05 *mm, -111.788 *mm, 1.5296 *mm]
+bounds = {}
 
 #generated from blender
-mesh_lines_x = [
-    0.13764009, 0.13746291, 0.13755122, 0.13750592, 0.13759479, 0.13000005, 0.13008250, 0.12991707,
-    0.12995748, 0.13004047
-]
-
-mesh_lines_y = [
-    -0.11493395, -0.11506604, -0.11501829, -0.11497639
-]
-
 mesh_lines_z = [
-    0.00091667, 0.00092794, 0.00108494, 0.00109621, 0.00092221, 0.00109075
+    0.00043464, 0.00044395, 0.00060237, 0.00061161, 0.00091803, 0.00092672, 0.00108627, 0.00109467,
+    0.00140124, 0.00140994
 ]
 
 def generate_ports(csx, fdtd):
@@ -58,92 +49,56 @@ def generate_structure(csx, fdtd):
     substrate_material.SetMaterialProperty(epsilon=4.2, kappa=0.02)
     copper_material = csx.AddMetal('copper')
     
-    substrate = substrate_material.AddPolyhedronReader('../stl/Substrate.002.stl')
-    copper_traces = copper_material.AddPolyhedronReader('../stl/Traces.002.stl')
-    copper_vias = copper_material.AddPolyhedronReader('../stl/Vias.002.stl')
+    substrate = substrate_material.AddPolyhedronReader('../stl/Substrate.stl')
+    copper_traces = copper_material.AddPolyhedronReader('../stl/Traces.stl')
+    copper_vias = copper_material.AddPolyhedronReader('../stl/Vias.stl')
+    copper_pads = copper_material.AddPolyhedronReader('../stl/Pads.stl')
 
     
     substrate.SetPriority(1)
     copper_traces.SetPriority(2)
     copper_vias.SetPriority(3)
+    copper_pads.SetPriority(4)
     
     substrate_debug = substrate.ReadFile()    
     copper_traces_debug = copper_traces.ReadFile()
     copper_vias_debug = copper_vias.ReadFile()
+    copper_pads_debug = copper_pads.ReadFile()
 
-    print(f"Substrate loading success: {substrate_debug}")
-    print(f"Copper traces loading success: {copper_traces_debug}")
-    print(f"Copper vias loading success: {copper_vias_debug}")
-    
-    
-    #ground = csx.AddMetal('ground')
-    #ground.AddBox(
-    #    [0.1274, -0.118388, 0.00093 - 0.0152e-3],
-    #    [0.14005, -0.111788, 0.00093],
-    #    priority=10
-    #)
-    #
-    ## Copper trace (at the top of the ports)
-    #trace = csx.AddMetal('trace')
-    #trace.AddBox(
-    #    [0.1305, -0.115084, 0.00108],
-    #    [0.1370, -0.114916, 0.00108 + 0.0152e-3],
-    #    priority=10
-    #)
-    
+    print(f"Substrate loaded: {substrate_debug}")
+    print(f"Copper traces loaded: {copper_traces_debug}")
+    print(f"Copper vias loaded: {copper_vias_debug}")
+    print(f"Copper pads loaded: {copper_pads_debug}")
+
+    print(f"substrate bounding box: {substrate.GetBoundBox()}")
+    global bounds
+    bounds = substrate.GetBoundBox()
     mesh = csx.GetGrid()
     mesh.SetDeltaUnit(engine_unit)
 
 
-    mesh.AddLine('x', [bounds[0] - expand *mm, bounds[3] + expand *mm])
-    mesh.AddLine('y', [bounds[1] - expand *mm, bounds[4] + expand *mm])
-    mesh.AddLine('z', [bounds[2] - expand *mm, bounds[5] + expand *mm])
+    mesh.AddLine('x', [bounds[0][0] - expand *mm, bounds[1][0] + expand *mm])
+    mesh.AddLine('y', [bounds[0][1] - expand *mm, bounds[1][1] + expand *mm])
+    mesh.AddLine('z', [bounds[0][2] - expand *mm, bounds[1][2] + expand *mm])
 
     #mesh.AddLine('z', [0.4316 *mm, 0.4468 *mm, 0.5996 *mm, 0.6148 *mm]) # mesh lines for highres
     #mesh.AddLine('z', [1.0828 *mm, 1.098 *mm, 1.398 *mm, 1.4132 *mm])
 
     #mesh lines for ports
 
-    lines_per_port = 5
-    port_count = 2
-    for i in range(lines_per_port + 1):
-        for j in range(port_count):
-            mesh.AddLine('x', [port_pos[j][0][0] + (port_pos[j][1][0] - port_pos[j][0][0]) * i/lines_per_port])
+    #lines_per_port = 5
+    #port_count = len(port_pos)
+    #for i in range(lines_per_port + 1):
+    #    for j in port_pos:
+    #        mesh.AddLine('x', [port_pos[j][0][0] + (port_pos[j][1][0] - port_pos[j][0][0]) * i/lines_per_port])
 
-    for i in range(6):
-        mesh.AddLine('z', [port_pos[0][0][2] + (port_pos[0][1][2] - port_pos[0][0][2]) * i/5])
-
-    #mesh.AddLine('z', [0.00108 + 0.0152e-3, 0.00093 - 0.0152e-3])
-
-    mesh.AddLine('x', mesh_lines_x)
-    mesh.AddLine('y', mesh_lines_y)
+    #mesh.AddLine('x', mesh_lines_x)
+    #mesh.AddLine('y', mesh_lines_y)
     mesh.AddLine('z', mesh_lines_z)
 
-    #mesh.AddLine('z',[
-    #-0.035 *mm,
-    #0 *mm,
-    #0.1164 *mm,
-    #0.1316 *mm,
-    #0.4316 *mm,
-    #0.4468 *mm,
-    #0.5996 *mm,
-    #0.6148 *mm,
-    #0.9148 *mm,
-    #0.93 *mm,
-    #1.0828 *mm,
-    #1.098 *mm,
-    #1.398 *mm,
-    #1.4132 *mm,
-    #1.5296 *mm,
-    #1.5646 *mm
-    #])
-
-    
     mesh.SmoothMeshLines('x', resolution)
     mesh.SmoothMeshLines('y', resolution)
     mesh.SmoothMeshLines('z', resolution)
-
-    #print(stl_reader.GetBoundBox())
             
 def open_view(csx, fdtd):    
     csx.Write2XML('geometry.xml')
@@ -158,8 +113,8 @@ def simulate(csx, fdtd):
     fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
 
     dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
-    dump.AddBox(start=[bounds[0], bounds[1], bounds[2]],
-                stop=[bounds[3], bounds[4], bounds[5]])
+    dump.AddBox(start=[bounds[0][0], bounds[0][1], bounds[0][2]],
+                stop=[bounds[1][0], bounds[1][1], bounds[1][2]])
     
     fdtd.Run(sim_path)
     
@@ -267,16 +222,19 @@ if __name__ == "__main__":
     
     if len(sys.argv) <= 1:
         print('No command given, expect "generate", "simulate", "postproc", "debug"')
-    elif sys.argv[1] in ["generate", "simulate", "debug"]:
+    elif sys.argv[1] == "generate":
         generate_structure(csx, fdtd)
         generate_ports(csx, fdtd)
         open_view(csx, fdtd)
-        
-        if sys.argv[1] == "simulate":
-            # run simulator
-            simulate(csx, fdtd)
-        elif sys.argv[1] == "debug":
-            debug(csx, fdtd)
+    elif sys.argv[1] == "simulate":
+        generate_structure(csx, fdtd)
+        generate_ports(csx, fdtd)
+        open_view(csx, fdtd)
+        simulate(csx, fdtd)
+    elif sys.argv[1] == "debug":
+        generate_structure(csx, fdtd)
+        generate_ports(csx, fdtd)
+        debug(csx, fdtd)
             
     elif sys.argv[1] == "postproc":
         if len(sys.argv) <= 2:
