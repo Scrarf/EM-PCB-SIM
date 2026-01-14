@@ -135,19 +135,25 @@ def postproc(arg):
     port[0].CalcPort(sim_path, freq_list, z0)
     port[1].CalcPort(sim_path, freq_list, z0)
 
+    s_matrix = np.zeros((points, 2, 2), dtype=complex)
+    s_matrix[:, 0, 0] = port[0].uf_ref / port[0].uf_inc
+    s_matrix[:, 1, 0] = port[1].uf_ref / port[0].uf_inc
+    s_matrix[:, 0, 1] = port[1].uf_ref / port[0].uf_inc
+    s_matrix[:, 1, 1] = port[0].uf_ref / port[0].uf_inc
 
-    s11_list = port[0].uf_ref / port[0].uf_inc
-    s21_list = port[1].uf_ref / port[0].uf_inc
+    freq = skrf.Frequency.from_f(freq_list, unit='hz')
 
-    s12_list = s21_list
-    s22_list = s11_list
-
+    network = skrf.Network(
+        frequency=freq,
+        s=s_matrix,
+        z0=z0
+    )
     
     if arg == 's_param':
         print("Plotting S-parameters...")
 
-        s11_db_list = 10 * np.log10(np.abs(s11_list) ** 2)
-        s21_db_list = 10 * np.log10(np.abs(s21_list) ** 2) 
+        s11_db_list = 10 * np.log10(np.abs(s_matrix[:, 0, 0]) ** 2)
+        s21_db_list = 10 * np.log10(np.abs(s_matrix[:, 1, 0]) ** 2) 
             
         plt.plot(freq_list / 1e9, s11_db_list, label='$S_{11}$ dB')
         plt.plot(freq_list / 1e9, s21_db_list, label='$S_{21}$ dB')
@@ -161,44 +167,13 @@ def postproc(arg):
         
     if arg == 'smith_chart':
 
-        s_matrix = np.zeros((points, 2, 2), dtype=complex)
-                
-        s_matrix[:, 0, 0] = s11_list
-        s_matrix[:, 1, 0] = s21_list
-        s_matrix[:, 0, 1] = s12_list
-        s_matrix[:, 1, 1] = s22_list
-
-        freq = skrf.Frequency.from_f(freq_list, unit='hz')
-
-        network = skrf.Network(
-            frequency=freq,
-            s=s_matrix,
-            z0=50
-        )
-
         skrf.stylely()
         plt.figure()
         network.plot_s_smith(m=0, n=0)   # S11 Smith chart
         plt.title("S11 Smith Chart")
 
     if arg == 'tdr':
-
-        s_matrix = np.zeros((points, 2, 2), dtype=complex)
-                
-        s_matrix[:, 0, 0] = s11_list
-        s_matrix[:, 1, 0] = s21_list
-        s_matrix[:, 0, 1] = s12_list
-        s_matrix[:, 1, 1] = s22_list
-
-        freq = skrf.Frequency.from_f(freq_list, unit='hz')
-
-        network = skrf.Network(
-            frequency=freq,
-            s=s_matrix,
-            z0=50
-        )
-
-            
+        
         network_dc = network.extrapolate_to_dc(kind='linear')
         
         plt.figure()
@@ -211,7 +186,12 @@ def postproc(arg):
         plt.title("Time Domain Reflectometry - Impulse")
         network_dc.s11.plot_z_time_impulse(window='hamming', label="impedance")
         plt.xlim([-1, 2])  # look at the first two nanoseconds
-    
+        
+    if arg == 'save_touchstone':                        
+            network.write_touchstone('./touchstone/simulation.s2p')
+            print("Touchstone file saved as simulation.s2p")
+
+
     plt.show()
 
     
@@ -237,8 +217,8 @@ if __name__ == "__main__":
         debug(csx, fdtd)
             
     elif sys.argv[1] == "postproc":
-        if len(sys.argv) <= 2:
-            print('postproc requires 2 arguments, expect "s_param", "smith_chart", "tdf"')
+        if len(sys.argv) <= 2 or sys.argv[2] not in ["s_param", "smith_chart", "tdr", "save_touchstone"]:
+            print('postproc requires 2 arguments, expect "s_param", "smith_chart", "tdr", "save_touchstone"')
         else:
             generate_structure(csx, fdtd)
             generate_ports(csx, fdtd)
