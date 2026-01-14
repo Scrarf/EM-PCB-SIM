@@ -12,7 +12,7 @@ from ports import port_pos
 engine_unit = 1 #openEMS still works in meeters
 mm = 1e-3 #milimeter for muliplication
 
-f_min = 1#100e6  # post-processing only, not used in simulation
+f_min = 100e6  # post-processing only, not used in simulation
 f_max = 10e9   # determines mesh size and excitation signal bandwidth
 epsilon_r = 1
 resolution = 0.08 *mm
