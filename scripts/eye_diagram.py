@@ -48,13 +48,13 @@ def generate_waveform_components(model_name='DQ40_ODT40'):
 
 def generate_sequence(freq=500e6, size=10):
     period = 1 / freq #in seconds
-    #extension = int(round((period / dt / 2) - len(rise_interpolated)))
-    #hold = int(period / dt / 2)
+    extension = int(round((period / dt / 2) - len(rise_interpolated)))
+    hold = int(period / dt / 2)
 
-    samples_per_period = int(round(period / dt))
-    samples_per_half = samples_per_period // 2  # Integer divide to ensure 2 halves = 1 period
-    extension = samples_per_half - len(rise_interpolated)
-    hold = samples_per_half
+    #samples_per_period = int(round(period / dt))
+    #samples_per_half = samples_per_period // 2  # Integer divide to ensure 2 halves = 1 period
+    #extension = samples_per_half - len(rise_interpolated)
+    #hold = samples_per_half
     
     state = 0
     print(f'extension: {extension}')
@@ -62,21 +62,25 @@ def generate_sequence(freq=500e6, size=10):
     waveform = np.zeros(0)
 
     
-    for i in range(size*2):
-        #random.choice([True, False])
+    segments = []
+    
+    for i in range(size * 2):
         if random.choice([True, False]):
             if state:
-                waveform = np.concatenate([waveform, fall_interpolated, np.full(extension, fall_interpolated[-1])])
+                segments.append(fall_interpolated)
+                segments.append(np.full(extension, fall_interpolated[-1]))
             else:
-                waveform = np.concatenate([waveform, rise_interpolated, np.full(extension, rise_interpolated[-1])])
-                
+                segments.append(rise_interpolated)
+                segments.append(np.full(extension, rise_interpolated[-1]))
             state = ~state
         else:
             if state:
-                waveform = np.concatenate([waveform, np.full(hold, rise_interpolated[-1])])
+                segments.append(np.full(hold, rise_interpolated[-1]))
             else:
-                waveform = np.concatenate([waveform, np.full(hold, fall_interpolated[-1])])
-            
+                segments.append(np.full(hold, fall_interpolated[-1]))
+    
+    waveform = np.concatenate(segments)
+    
     return waveform
 
 def convolution(waveform_time, network, i, j):
@@ -100,13 +104,15 @@ def convolution(waveform_time, network, i, j):
 
     filtered_fft = waveform_fft * H
     
-    return np.real(np.fft.ifft(filtered_fft)[:len(waveform_time)])
+    return np.real(np.fft.ifft(filtered_fft)[0:len(waveform_time)])
     #return np.fft.ifft(filtered_fft)
 
 
 dt = 1e-12 /3 # 1ps time step
 freq = 300e6
 size = 500
+network = rf.Network('./touchstone/simulation.s88p')
+
 
 rise_interpolated, fall_interpolated = generate_waveform_components(model_name='DQ40_ODT40')
 
@@ -114,12 +120,16 @@ rise_interpolated, fall_interpolated = generate_waveform_components(model_name='
 waveform_long = generate_sequence(freq=freq, size=size)
 waveform_fft = np.fft.fft(waveform_long)
 
+print(np.shape(network.s))
+#for i in network.s[0: : :]:
+addition_result = convolution(waveform_time=waveform_long, network=network, i=1, j=0)
+
 #perfect sequence
 waveform_perfect = (signal.square(np.pi * np.linspace(np.pi/2, len(waveform_long) * dt * freq * 2 + np.pi/2, len(waveform_long))) + 1) / 2
 waveform_fft_perfect = np.fft.fft(waveform_perfect)
 
 #s parameter complex numbers. but X axis is not Hz its just points.
-network = rf.Network('./touchstone/simulation.s2p')
+
 
 
 #plt.style.use('dark_background')
@@ -128,19 +138,20 @@ f = np.fft.fftfreq(len(waveform_long), dt)
 #t = np.arange(0, len(waveform_long) * dt, dt)
 t = np.arange(len(waveform_long)) * dt
 
-plt.figure() #new figure
 
-
-plt.plot(t, waveform_perfect, label="waveform_perfect", alpha=0.3, color='red')
-plt.plot(t, waveform_long, label="waveform", color='red')
-
-plt.plot(t, convolution(waveform_time=waveform_long, network=network, i=1, j=0), label="convolution") 
-
-plt.xlabel('Time (s)')
-plt.ylabel('Voltage (V)')
-plt.title('Time domain random bit sequence')
-plt.grid(True)
-plt.legend()
+#plt.figure() #new figure
+#
+#
+#plt.plot(t, waveform_perfect, label="waveform_perfect", alpha=0.3, color='red')
+#plt.plot(t, waveform_long, label="waveform", color='red')
+#
+#plt.plot(t, convolution(waveform_time=waveform_long, network=network, i=1, j=0), label="convolution") 
+#
+#plt.xlabel('Time (s)')
+#plt.ylabel('Voltage (V)')
+#plt.title('Time domain random bit sequence')
+#plt.grid(True)
+#plt.legend()
 
 
 plt.figure() #new figure
@@ -157,15 +168,15 @@ plt.grid()
 plt.legend()
 
 
-plt.figure() #new figure
-plt.plot(network.f, abs(network.s[:, 1, 0]), label="s21_raw", color="blue")
-plt.title('S-parameter real part')
-plt.grid()
-plt.legend()
+#plt.figure() #new figure
+#plt.plot(network.f, abs(network.s[:, 1, 0]), label="s21_raw", color="blue")
+#plt.title('S-parameter real part')
+#plt.grid()
+#plt.legend()
 
 plt.figure()
 
-plt.scatter(t%(1/freq), convolution(waveform_time=waveform_long, network=network, i=1, j=0),
+plt.scatter(t%(1/freq), addition_result,
              c=range(len(t)),
              cmap='hsv',
              s=0.1,
