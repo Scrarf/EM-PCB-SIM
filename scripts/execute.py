@@ -8,6 +8,7 @@ import numpy as np
 import matplotlib.pylab as plt
 import skrf
 from ports import port_pos
+import time
 
 engine_unit = 1 #openEMS still works in meeters
 mm = 1e-3 #milimeter for muliplication
@@ -22,7 +23,10 @@ expand = 1
 
 port = [None] * len(port_pos)
 
-sim_path = os.path.join(os.getcwd(), 'sim')
+#'exc' is a list of excited ports. firt port is index 1, follows name not array index.
+exc = 1;
+
+sim_path = os.path.join(os.getcwd(), f"sim/port_{exc}")
 
 bounds = {}
 
@@ -32,16 +36,15 @@ mesh_lines_z = [
     0.00140124, 0.00140994
 ]
 
-def generate_ports(csx, fdtd):
+mesh = []
 
-    #'exc' is a list of excited ports. firt port is index 1, follows name not array index.
-    exc = {1}
+def generate_ports(csx, fdtd):
 
     for i in port_pos:
         port[i] = fdtd.AddLumpedPort(i+1, z0,
                     port_pos[i][0],
                     port_pos[i][1],
-                    'z', excite=1 if i+1 in exc else 0)
+                    'z', excite=1 if (i+1 == exc) else 0)
                                                                         
 def generate_structure(csx, fdtd):
     
@@ -73,6 +76,7 @@ def generate_structure(csx, fdtd):
     print(f"substrate bounding box: {substrate.GetBoundBox()}")
     global bounds
     bounds = substrate.GetBoundBox()
+    global mesh
     mesh = csx.GetGrid()
     mesh.SetDeltaUnit(engine_unit)
 
@@ -107,14 +111,21 @@ def open_view(csx, fdtd):
 
 def simulate(csx, fdtd):
     fdtd.SetEndCriteria(1e-5)
-    #fdtd.SetOverSampling(4)
+    fdtd.SetOverSampling(8)
     
     fdtd.SetGaussExcite(f_max / 2, f_max / 2)
     fdtd.SetBoundaryCond(["PML_12", "PML_12", "PML_12", "PML_12", "PML_12", "PML_12"])
 
+    z_lines = mesh.GetLines('z')
+
+    plane_pos_z = 1.01103 * mm
+    closest_z = z_lines[np.argmin(np.abs(z_lines - plane_pos_z))]
+
+    print(f"Actual closest Z plane found at: {closest_z*100} mm")
+    
     dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
-    dump.AddBox(start=[bounds[0][0], bounds[0][1], bounds[0][2]],
-                stop=[bounds[1][0], bounds[1][1], bounds[1][2]])
+    dump.AddBox(start=[bounds[0][0], bounds[0][1], closest_z],
+                stop=[bounds[1][0], bounds[1][1], closest_z])
     
     fdtd.Run(sim_path)
     
@@ -126,20 +137,18 @@ def debug(csx, fdtd):
     print("debug complete")
     
 
-def postproc(arg):
-    
+def postproc(arg, port_pairs):
     points = 1000
     
     freq_list = np.linspace(f_min, f_max, points)
-    
-    port[0].CalcPort(sim_path, freq_list, z0)
-    port[1].CalcPort(sim_path, freq_list, z0)
 
-    s_matrix = np.zeros((points, 2, 2), dtype=complex)
-    s_matrix[:, 0, 0] = port[0].uf_ref / port[0].uf_inc
-    s_matrix[:, 1, 0] = port[1].uf_ref / port[0].uf_inc
-    s_matrix[:, 0, 1] = port[1].uf_ref / port[0].uf_inc
-    s_matrix[:, 1, 1] = port[0].uf_ref / port[0].uf_inc
+    for p in port:
+        p.CalcPort(sim_path, freq_list, z0)
+        
+    s_matrix = np.zeros((points, len(port), len(port)), dtype=complex)
+    
+    for i in range(len(port)):
+            s_matrix[:, i, exc-1] = port[i].uf_ref / port[exc-1].uf_inc       
 
     freq = skrf.Frequency.from_f(freq_list, unit='hz')
 
@@ -152,12 +161,10 @@ def postproc(arg):
     if arg == 's_param':
         print("Plotting S-parameters...")
 
-        s11_db_list = 10 * np.log10(np.abs(s_matrix[:, 0, 0]) ** 2)
-        s21_db_list = 10 * np.log10(np.abs(s_matrix[:, 1, 0]) ** 2) 
+        for m, n in port_pairs:
+            db_list = 10 * np.log10(np.abs(s_matrix[:, m-1, n-1]) ** 2)
+            plt.plot(freq_list / 1e9, db_list, label=f"$S_{{{m} {n}}}$ dB")
             
-        plt.plot(freq_list / 1e9, s11_db_list, label='$S_{11}$ dB')
-        plt.plot(freq_list / 1e9, s21_db_list, label='$S_{21}$ dB')
-
         #plt.xscale('log')
         plt.title("S-parameters")    
         plt.grid(which='both')
@@ -166,11 +173,11 @@ def postproc(arg):
         plt.ylabel("dB")
         
     if arg == 'smith_chart':
-
         skrf.stylely()
         plt.figure()
-        network.plot_s_smith(m=0, n=0)   # S11 Smith chart
-        plt.title("S11 Smith Chart")
+        for m, n in port_pairs:
+            network.plot_s_smith(m=m-1, n=n-1)
+        plt.title("Smith Chart")
 
     if arg == 'tdr':
         
@@ -187,13 +194,35 @@ def postproc(arg):
         network_dc.s11.plot_z_time_impulse(window='hamming', label="impedance")
         plt.xlim([-1, 2])  # look at the first two nanoseconds
         
-    if arg == 'save_touchstone':                        
-            network.write_touchstone('./touchstone/simulation.s2p')
-            print("Touchstone file saved as simulation.s2p")
-
-
     plt.show()
 
+def save_touchstone():
+    touchstone_path = './touchstone/simulation.s88p'    
+    points = 1000
+    freq_list = np.linspace(f_min, f_max, points)
+    
+    s_matrix = np.zeros((points, len(port), len(port)), dtype=complex)
+    
+    # Read all ports from all simulations
+    for i in range(len(port)):
+        sim_path_port = os.path.join(os.getcwd(), f"sim/port_{i+1}")
+        
+        if os.path.exists(sim_path_port):
+            for p in port:
+                p.CalcPort(sim_path_port, freq_list, z0)
+        
+        # Fill column i with data from port i excitation
+        for j in range(len(port)):
+            s_matrix[:, j, i] = port[j].uf_ref / port[i].uf_inc
+    
+    # Create network
+    freq = skrf.Frequency.from_f(freq_list, unit='hz')
+    network = skrf.Network(
+        frequency=freq,
+        s=s_matrix,
+        z0=z0
+    )
+    
     
 if __name__ == "__main__":
     csx = ContinuousStructure()
@@ -201,28 +230,47 @@ if __name__ == "__main__":
     fdtd.SetCSX(csx)
     
     if len(sys.argv) <= 1:
-        print('No command given, expect "generate", "simulate", "postproc", "debug"')
+        print('No command given, expect "generate", "simulate", "postproc", "debug", "save_touchstone"')
     elif sys.argv[1] == "generate":
         generate_structure(csx, fdtd)
         generate_ports(csx, fdtd)
         open_view(csx, fdtd)
     elif sys.argv[1] == "simulate":
-        generate_structure(csx, fdtd)
-        generate_ports(csx, fdtd)
-        open_view(csx, fdtd)
-        simulate(csx, fdtd)
+        if len(sys.argv) < 2:
+            print("Choose an active port number (port index not the array index)")
+        else:
+            exc = sys.argv[2]
+            sim_path = os.path.join(os.getcwd(), f"sim/port_{exc}")
+            generate_structure(csx, fdtd)
+            generate_ports(csx, fdtd)
+            print(f"Simulating port: {exc}")
+            simulate(csx, fdtd)
     elif sys.argv[1] == "debug":
         generate_structure(csx, fdtd)
         generate_ports(csx, fdtd)
         debug(csx, fdtd)
             
     elif sys.argv[1] == "postproc":
-        if len(sys.argv) <= 2 or sys.argv[2] not in ["s_param", "smith_chart", "tdr", "save_touchstone"]:
-            print('postproc requires 2 arguments, expect "s_param", "smith_chart", "tdr", "save_touchstone"')
+        if len(sys.argv) <= 2 or sys.argv[2] not in ["s_param", "smith_chart", "tdr"]:
+            print('postproc requires 2 arguments, expect "s_param", "smith_chart", "tdr"')
         else:
             generate_structure(csx, fdtd)
             generate_ports(csx, fdtd)
-            postproc(sys.argv[2])
+            port_pairs = []
+            if len(sys.argv) >= 4:
+                for arg in sys.argv[3:]:
+                    indices = arg.split(',')
+                    m, n = int(indices[0]), int(indices[1])
+                    port_pairs.append((m, n))
+            else:
+                s_params = [(0, 0)]  # Default S11
+            postproc(sys.argv[2], port_pairs)
+    elif sys.argv[1] == "save_touchstone":
+        generate_structure(csx, fdtd)
+        generate_ports(csx, fdtd)    
+        save_touchstone()            
+
+    
     else:
         print("Unknown command %s" % sys.argv[1])
         exit(1)
