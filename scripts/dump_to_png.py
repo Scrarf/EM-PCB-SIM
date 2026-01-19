@@ -8,7 +8,7 @@ import os
 # -----------------------------
 h5file = "sim/field_dump.h5"
 outdir = "png_frames"
-z_index = 21          # <-- choose Z slice here
+z_index = 34          # <-- choose Z slice here
 cmap = "inferno"
 dpi = 150
 
