@@ -121,7 +121,7 @@ def simulate(csx, fdtd):
     plane_pos_z = 1.01103 * mm
     closest_z = z_lines[np.argmin(np.abs(z_lines - plane_pos_z))]
 
-    print(f"Actual closest Z plane found at: {closest_z*100} mm")
+    print(f"Actual closest Z plane found at: {closest_z*1000} mm")
     
     dump = csx.AddDump("field_dump", dump_type=0, file_type=1)
     dump.AddBox(start=[bounds[0][0], bounds[0][1], closest_z],
@@ -141,14 +141,33 @@ def postproc(arg, port_pairs):
     points = 1000
     
     freq_list = np.linspace(f_min, f_max, points)
-
-    for p in port:
-        p.CalcPort(sim_path, freq_list, z0)
-        
+    #print(port_pairs)
+    
+    
     s_matrix = np.zeros((points, len(port), len(port)), dtype=complex)
     
     for i in range(len(port)):
-            s_matrix[:, i, exc-1] = port[i].uf_ref / port[exc-1].uf_inc       
+        sim_path_port = os.path.join(os.getcwd(), f"sim/port_{i+1}")
+        if os.path.exists(sim_path_port):
+            print(f"Sim path: {sim_path_port}")
+            for p in port:
+                p.CalcPort(sim_path_port, freq_list, z0)
+            for j in range(len(port)):
+                s_matrix[:, j, i] = port[j].uf_ref / port[i].uf_inc
+        else:
+            print(f"Port {i+1} not found.")
+
+    #print(s_matrix[:, 2, 2])
+
+    #sim_path_port = os.path.join(os.getcwd(), f"sim/port_{port_pairs[0][1]}")
+
+    #for p in port:
+    #    p.CalcPort(sim_path_port, freq_list, z0)
+    #    
+    #s_matrix = np.zeros((points, len(port), len(port)), dtype=complex)
+    #
+    #for i in range(len(port)):
+    #    s_matrix[:, i, exc-1] = port[i].uf_ref / port[exc-1].uf_inc       
 
     freq = skrf.Frequency.from_f(freq_list, unit='hz')
 
@@ -239,11 +258,12 @@ if __name__ == "__main__":
         if len(sys.argv) < 2:
             print("Choose an active port number (port index not the array index)")
         else:
-            exc = sys.argv[2]
+            exc = int(sys.argv[2])
+            
             sim_path = os.path.join(os.getcwd(), f"sim/port_{exc}")
+            print(f"Simulating port: {exc}")
             generate_structure(csx, fdtd)
             generate_ports(csx, fdtd)
-            print(f"Simulating port: {exc}")
             simulate(csx, fdtd)
     elif sys.argv[1] == "debug":
         generate_structure(csx, fdtd)
