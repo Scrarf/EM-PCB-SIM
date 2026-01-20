@@ -132,8 +132,9 @@ def simulate(csx, fdtd):
     print("COMPLETE YAY!")
 
 def debug(csx, fdtd):
+    path = os.path.join(os.getcwd(), f"sim")
     fdtd.SetGaussExcite(f_max / 2, f_max / 2)
-    fdtd.Run(sim_path, debug_pec=True, verbose=3, setup_only=1, debug_material=True, debug_operator=True)
+    fdtd.Run(path, debug_pec=True, verbose=3, setup_only=1, debug_material=True, debug_operator=True)
     print("debug complete")
     
 
@@ -242,6 +243,7 @@ def save_touchstone():
         z0=z0
     )
     
+    network.write_touchstone(touchstone_path)    
     
 if __name__ == "__main__":
     csx = ContinuousStructure()
@@ -287,10 +289,8 @@ if __name__ == "__main__":
             postproc(sys.argv[2], port_pairs)
     elif sys.argv[1] == "save_touchstone":
         generate_structure(csx, fdtd)
-        generate_ports(csx, fdtd)    
-        save_touchstone()            
-
-    
+        generate_ports(csx, fdtd)
+        save_touchstone()
     else:
         print("Unknown command %s" % sys.argv[1])
         exit(1)
