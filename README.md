@@ -1,11 +1,19 @@
 
-#Personal repository for Simulating PCB with openEMS.
+# Personal repository for Simulating PCB with openEMS.
 The project in question: [PCB\_For\_FPGA\_Path\_Tracer](https://github.com/Scrarf/PCB_For_FPGA_Path_Tracer).
 
 This repo is just a showcase of the simulation results. It is not supossed to be used by anyone else except me (because for readibility issues) but anyone is welcome to use it as reference or inspiration. I will also provide command line args and usage guide for anyone interested.
 
-##Ussage:
+## Dependencies:
 
+- [openEMS](https://github.com/thliebig/openEMS) ([Instalation guide](https://docs.openems.de/install.html). You also need to install its python interface)
+- [MatPlotLib](https://github.com/matplotlib/matplotlib)
+- [scikit-rf](https://github.com/scikit-rf/scikit-rf)
+- [ffmpeg](https://github.com/FFmpeg/FFmpeg) (For image sequence assembly. Optional)
+
+
+## Ussage:
+asdwdasd
 main file to run is "execute.py" located in scripts/execute.py.
 ```python
 # you must cd into scripts/ directory to run files.
@@ -51,7 +59,7 @@ $ python3 execute.py save_touchstone
 # if the foldr is missing the values in the coresponding collumn will be filled with NaNs.
 ```
 
-#####The geometry form KiCAD was exported as .glb file. Blender was used for geometry cleanup and port placement.
+#### The geometry form KiCAD was exported as .glb file. Blender was used for geometry cleanup and port placement.
 several scripts are provided that are only supossed to be opened in blender which provide easy way to export mesh lines and ports.
 
 ```python
@@ -70,6 +78,17 @@ $ export_ports.py
 # Ports are automaticly exported into a "ports.py" python file that is automaticly
 # imported into execute.py (no need to paste this time).
 
-
 ```
+# Gallery
+
+![heatmap](docs/eye_diagram_port_3_heatmap.png)
+![plt](docs/eye_diagram_port_3_plt.png)
+![fft](docs/Frequency_domain_random_bit_sequence.png)
+
+("fft_perfect" is a perfect is a continious 300MHz signal in frequency domain)
+
+The signal integrity is so perfect that I am worried I did something wrong.
+
+<video src="docs/field_mag.mp4" controls="controls" style="max-width: 100%;">
+</video>
 
