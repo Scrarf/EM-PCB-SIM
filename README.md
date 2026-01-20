@@ -89,6 +89,6 @@ $ export_ports.py
 
 The signal integrity is so perfect that I am worried I did something wrong.
 
-![field_mag](https://raw.githubusercontent.com/Scrarf/EM-PCB-SIM/master/docs/field_mag.mp4)
+https://raw.githubusercontent.com/Scrarf/EM-PCB-SIM/master/docs/field_mag.mp4
 
 
