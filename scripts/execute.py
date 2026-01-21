@@ -183,14 +183,14 @@ def postproc(arg, port_pairs):
 
         for m, n in port_pairs:
             db_list = 10 * np.log10(np.abs(s_matrix[:, m-1, n-1]) ** 2)
-            plt.plot(freq_list / 1e9, db_list, label=f"$S_{{{m} {n}}}$ dB")
+            plt.plot(freq_list, db_list, label=f"$S_{{{m} {n}}}$")
             
         #plt.xscale('log')
         plt.title("S-parameters")    
         plt.grid(which='both')
         plt.legend()
-        plt.xlabel("GHz")
-        plt.ylabel("dB")
+        plt.xlabel("Frequency (Hz)")
+        plt.ylabel("Amplitude (dB)")
         
     if arg == 'smith_chart':
         skrf.stylely()
