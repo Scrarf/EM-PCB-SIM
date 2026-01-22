@@ -30,13 +30,17 @@ with h5py.File(h5file, "r") as f:
         
         img = mag[z_index, :, :]
         
-        plt.figure(figsize=(6, 5))
+        plt.figure(figsize=(6, 5), facecolor='black')
         plt.imshow(img, origin="lower", cmap=cmap, norm=PowerNorm(gamma=0.5, vmin=0, vmax=4))
+
         
-        plt.colorbar(label="|F|")
+        #plt.colorbar(label="|F|")
         plt.title(f"t = {t}")
-        plt.xlabel("X")
-        plt.ylabel("Y")
+        plt.axis('off')
+
+        cbar = plt.colorbar(label="|F|")
+        cbar.ax.yaxis.set_tick_params(color='white', labelcolor='white')
+        cbar.set_label("|F|", color='white')
         
         fname = os.path.join(outdir, f"frame_{i:05d}.png")
         plt.savefig(fname, dpi=dpi)
