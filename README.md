@@ -87,7 +87,7 @@ $ export_ports.py
 ![plt](docs/eye_diagram_port_3_plt.png)
 ![fft](docs/Frequency_domain_random_bit_sequence.png)
 
-("fft_perfect" is a perfect is a continious 300MHz signal in frequency domain)
+("fft_perfect" is a perfect continious 300MHz signal in the frequency domain)
 
 The signal integrity is so perfect that I am worried I did something wrong.
 
